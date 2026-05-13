@@ -1,0 +1,51 @@
+name: zkred_wallet
+description: ZKred Identity Wallet POC powered by Privado ID Flutter SDK.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Privado ID (formerly PolygonID) Flutter SDK
+  # Not on pub.dev — fetched directly from GitHub
+  polygonid_flutter_sdk:
+    git:
+      url: https://github.com/0xPolygonID/polygonid-flutter-sdk.git
+      ref: v2.4.0
+  # UI
+  cupertino_icons: ^1.0.8
+  # State management
+  provider: ^6.1.2
+  # Secure private key storage
+  flutter_secure_storage: ^9.0.0
+  # QR code scanning
+  mobile_scanner: ^4.0.1
+  # Logging
+  logger: ^2.3.0
+  # HTTP client (for resolving request_uri deep links)
+  http: ^1.6.0
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^3.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.9
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/authV2.wcd
+    - assets/credentialAtomicQueryMTPV2.wcd
+    - assets/credentialAtomicQueryMTPV2OnChain.wcd
+    - assets/credentialAtomicQuerySigV2.wcd
+    - assets/credentialAtomicQuerySigV2OnChain.wcd
+    - assets/credentialAtomicQueryV3-beta.1.wcd
+    - assets/credentialAtomicQueryV3OnChain-beta.1.wcd
+    - assets/linkedMultiQuery10-beta.1.wcd
