@@ -54,12 +54,27 @@ class WalletProvider extends ChangeNotifier {
 
   // ---- SDK Initialization ----
 
+  bool _sdkInitialized = false;
+
   /// Initialize the Privado ID SDK. Called once from SplashScreen.
   Future<void> initSdk() async {
     _setStatus(WalletStatus.initializing, 'Initializing Privado ID SDK...');
 
     try {
-      await PolygonIdSdk.init(env: AppConfig.buildEnv());
+      if (!_sdkInitialized) {
+        try {
+          await PolygonIdSdk.init(env: AppConfig.buildEnv());
+          _sdkInitialized = true;
+        } catch (e) {
+          // GetIt double-registration on retry — SDK is already wired up.
+          if (e.toString().contains('already registered')) {
+            _log.d('SDK already initialized (GetIt), skipping re-init');
+            _sdkInitialized = true;
+          } else {
+            rethrow;
+          }
+        }
+      }
 
       PolygonIdSdk.I.errorHandling.switchStacktrace(enabled: true);
       PolygonIdSdk.I.errorHandling.stacktraceStream()

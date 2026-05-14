@@ -77,9 +77,8 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             children: [
               const SizedBox(height: 28),
-              // CLEO wordmark
               const Text(
-                'CLEO',
+                'ZKRED',
                 style: TextStyle(
                   fontSize: 56,
                   fontWeight: FontWeight.w600,
@@ -292,7 +291,7 @@ class _BottomPanel extends StatelessWidget {
             Text(
               provider.error ?? 'Initialization failed',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: ZKColors.text, fontSize: 13),
+              style: const TextStyle(color: ZKColors.textOnLight, fontSize: 13),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -304,7 +303,7 @@ class _BottomPanel extends StatelessWidget {
               'Create your identity',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: ZKColors.text,
+                color: ZKColors.textOnLight,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
@@ -313,7 +312,7 @@ class _BottomPanel extends StatelessWidget {
             const Text(
               'Generate a new DID on Polygon Amoy and start collecting verifiable credentials.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: ZKColors.textMuted, fontSize: 13, height: 1.4),
+              style: TextStyle(color: Color(0xFF5566AA), fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -330,7 +329,6 @@ class _BottomPanel extends StatelessWidget {
                   : const Text('Get Started'),
             ),
           ] else ...[
-            // Downloading / initializing UI
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
@@ -349,7 +347,7 @@ class _BottomPanel extends StatelessWidget {
               provider.statusMessage,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: ZKColors.text,
+                color: ZKColors.textOnLight,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -361,7 +359,7 @@ class _BottomPanel extends StatelessWidget {
                   : 'Almost there...',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: ZKColors.textMuted,
+                color: Color(0xFF5566AA),
                 fontSize: 12,
               ),
             ),

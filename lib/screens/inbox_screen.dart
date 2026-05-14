@@ -44,7 +44,7 @@ class _InboxScreenState extends State<InboxScreen> {
     if (credentials.isEmpty) {
       return [
         _InboxItemData(
-          organization: 'Cleo',
+          organization: 'ZKred',
           type: 'Welcome to your wallet',
           subtitle: 'Scan a QR to claim your first credential',
           date: 'Today',
