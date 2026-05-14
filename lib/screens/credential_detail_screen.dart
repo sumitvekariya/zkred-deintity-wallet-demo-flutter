@@ -91,7 +91,7 @@ class CredentialDetailScreen extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.chevron_left),
-                      color: ZKColors.primaryDark,
+                      color: ZKColors.electric,
                       onPressed: () => Navigator.pop(context),
                     ),
                     Expanded(
@@ -114,15 +114,9 @@ class CredentialDetailScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: ZKColors.card,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color.fromRGBO(0, 0, 0, 0.06),
-                            blurRadius: 14,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
+                        border: Border.all(color: ZKColors.cardBorder),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +308,7 @@ class CredentialDetailScreen extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: ZKColors.surface,
         title: const Text('Delete credential'),
         content: const Text(
             'This will remove the credential from your wallet. Continue?'),

@@ -115,15 +115,9 @@ class _CredentialsScreenState extends State<CredentialsScreen>
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: ZKColors.card,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.06),
-                        blurRadius: 14,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
+                    border: Border.all(color: ZKColors.cardBorder),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Column(

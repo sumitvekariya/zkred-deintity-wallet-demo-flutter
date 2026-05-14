@@ -83,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen>
                 style: TextStyle(
                   fontSize: 56,
                   fontWeight: FontWeight.w600,
-                  color: ZKColors.primaryDark,
+                  color: ZKColors.electric,
                   letterSpacing: 2,
                 ),
               ),
@@ -92,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
                 'Identity Wallet',
                 style: TextStyle(
                   fontSize: 14,
-                  color: ZKColors.primaryDark,
+                  color: ZKColors.electric,
                   letterSpacing: 1,
                 ),
               ),

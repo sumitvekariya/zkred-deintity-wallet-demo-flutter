@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Welcome back,',
                           style: TextStyle(
                             fontSize: 14,
-                            color: ZKColors.primaryDark,
+                            color: ZKColors.electric,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: ZKColors.primaryDark,
+                    color: ZKColors.electric,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     width: 32,
                                     height: 32,
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFFE9F7F4),
+                                      color: ZKColors.surface,
                                       shape: BoxShape.circle,
                                     ),
                                     alignment: Alignment.center,
@@ -309,15 +309,9 @@ class _CardContainer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ZKColors.card,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.06),
-            blurRadius: 14,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: ZKColors.cardBorder),
       ),
       child: child,
     );

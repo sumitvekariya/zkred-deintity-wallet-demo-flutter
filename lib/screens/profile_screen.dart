@@ -91,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (wallet.identifier != null)
                     TextButton.icon(
                       style: TextButton.styleFrom(
-                        foregroundColor: ZKColors.primaryDark,
+                        foregroundColor: ZKColors.electric,
                       ),
                       onPressed: () {
                         Clipboard.setData(
@@ -194,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool revealed = false;
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: ZKColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -389,15 +389,9 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ZKColors.card,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.06),
-            blurRadius: 14,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: ZKColors.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -409,7 +403,7 @@ class _SectionCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: ZKColors.primaryDark,
+                color: ZKColors.electric,
                 letterSpacing: 0.5,
               ),
             ),

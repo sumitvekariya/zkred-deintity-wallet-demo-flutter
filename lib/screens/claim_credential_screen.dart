@@ -108,7 +108,7 @@ class _ClaimCredentialScreenState extends State<ClaimCredentialScreen>
                   children: [
                     IconButton(
                       icon: const Icon(Icons.chevron_left),
-                      color: ZKColors.primaryDark,
+                      color: ZKColors.electric,
                       onPressed: () => Navigator.pop(context),
                     ),
                     const Text(
@@ -172,15 +172,9 @@ class _Initial extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ZKColors.card,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color.fromRGBO(0, 0, 0, 0.06),
-                blurRadius: 14,
-                offset: Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: ZKColors.cardBorder),
           ),
           child: Column(
             children: [
@@ -279,7 +273,7 @@ class _Processing extends StatelessWidget {
           phaseLabels[phase],
           style: const TextStyle(
             fontSize: 14,
-            color: ZKColors.primaryDark,
+            color: ZKColors.electric,
           ),
         ),
         const Spacer(),

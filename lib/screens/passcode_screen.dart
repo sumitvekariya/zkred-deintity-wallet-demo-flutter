@@ -161,7 +161,7 @@ class _PasscodeScreenState extends State<PasscodeScreen>
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
-                        color: ZKColors.primaryDark,
+                        color: ZKColors.text,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -169,7 +169,7 @@ class _PasscodeScreenState extends State<PasscodeScreen>
                       _subtitle,
                       style: const TextStyle(
                         fontSize: 14,
-                        color: ZKColors.primaryDark,
+                        color: ZKColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 36),
@@ -196,7 +196,7 @@ class _PasscodeScreenState extends State<PasscodeScreen>
                                   ? ZKColors.primary
                                   : Colors.transparent,
                               border: Border.all(
-                                color: ZKColors.primaryDark,
+                                color: ZKColors.textSecondary,
                                 width: 1.6,
                               ),
                               shape: BoxShape.circle,
@@ -262,12 +262,11 @@ class _Keypad extends StatelessWidget {
                     onTap: onBackspace,
                     child: const Icon(
                       Icons.backspace_outlined,
-                      color: ZKColors.text,
+                      color: ZKColors.shield,
                     ),
                   );
                 }
                 if (key == '*') {
-                  // Decorative inactive key
                   return const SizedBox(width: 70, height: 70);
                 }
                 return _KeyButton(
@@ -277,7 +276,7 @@ class _Keypad extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w500,
-                      color: ZKColors.text,
+                      color: ZKColors.trust,
                     ),
                   ),
                 );

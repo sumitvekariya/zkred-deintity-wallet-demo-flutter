@@ -80,7 +80,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     final ClaimEntity? selected = await showModalBottomSheet<ClaimEntity>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: ZKColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -140,7 +140,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: Colors.white,
+      backgroundColor: ZKColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -163,7 +163,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: ZKColors.textMuted, height: 1.4),
+              style: const TextStyle(color: ZKColors.textSecondary, height: 1.4),
             ),
             const SizedBox(height: 22),
             SizedBox(
@@ -366,7 +366,7 @@ class _CredentialPickerSheet extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   'Pick the credential to use for this proof.',
-                  style: TextStyle(color: ZKColors.textMuted, fontSize: 13),
+                  style: TextStyle(color: ZKColors.textSecondary, fontSize: 13),
                 ),
               ],
             ),
@@ -430,10 +430,10 @@ class _CredentialPickerCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ZKColors.card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isNewest ? ZKColors.primary : ZKColors.border,
+            color: isNewest ? ZKColors.electric : ZKColors.cardBorder,
             width: isNewest ? 1.5 : 1,
           ),
         ),
@@ -461,13 +461,13 @@ class _CredentialPickerCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE9F7F4),
+                      color: const Color.fromRGBO(17, 78, 246, 0.25),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
                       'Newest',
                       style: TextStyle(
-                        color: ZKColors.primaryDark,
+                        color: ZKColors.text,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -511,7 +511,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                color: ZKColors.textMuted,
+                color: ZKColors.textSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -545,11 +545,12 @@ class _PasteInputCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ZKColors.surface,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ZKColors.cardBorder),
         boxShadow: const [
           BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.25),
+            color: Color.fromRGBO(0, 0, 0, 0.4),
             blurRadius: 20,
             offset: Offset(0, -4),
           ),
@@ -570,7 +571,7 @@ class _PasteInputCard extends StatelessWidget {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close,
-                    color: ZKColors.textMuted, size: 20),
+                    color: ZKColors.textSecondary, size: 20),
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 onPressed: onClose,

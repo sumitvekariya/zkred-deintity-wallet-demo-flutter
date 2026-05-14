@@ -110,15 +110,9 @@ class _InboxScreenState extends State<InboxScreen> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: ZKColors.card,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.06),
-                        blurRadius: 14,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
+                    border: Border.all(color: ZKColors.cardBorder),
                   ),
                   padding:
                       const EdgeInsets.fromLTRB(12, 14, 12, 8),
@@ -275,7 +269,7 @@ class _InboxRow extends StatelessWidget {
                     item.type,
                     style: const TextStyle(
                       fontSize: 13,
-                      color: ZKColors.primaryDark,
+                      color: ZKColors.electric,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
