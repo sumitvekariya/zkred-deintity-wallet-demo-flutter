@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/wallet_provider.dart';
+import '../theme/app_theme.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -35,9 +36,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
       _scanned = true;
     });
 
-    await _controller.stop();
-
     final provider = context.read<WalletProvider>();
+    await _controller.stop();
     final success = await provider.handleQrMessage(value.trim());
 
     if (!mounted) return;
@@ -53,7 +53,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         title: 'Success',
         message: 'QR code processed successfully!',
         icon: Icons.check_circle_outline,
-        color: Colors.green,
+        color: ZKColors.success,
         onDone: () => Navigator.pop(context),
       );
     } else {
@@ -61,7 +61,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         title: 'Failed',
         message: provider.error ?? 'Unknown error',
         icon: Icons.error_outline,
-        color: Theme.of(context).colorScheme.error,
+        color: ZKColors.error,
         onDone: () {
           provider.clearError();
           setState(() {
@@ -80,7 +80,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     final ClaimEntity? selected = await showModalBottomSheet<ClaimEntity>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF16162A),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -90,7 +90,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
     if (!mounted) return;
 
     if (selected == null) {
-      // User dismissed — cancel
       provider.cancelPendingAuth();
       setState(() {
         _processing = false;
@@ -109,7 +108,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         title: 'Success',
         message: 'Proof generated successfully!',
         icon: Icons.check_circle_outline,
-        color: Colors.green,
+        color: ZKColors.success,
         onDone: () => Navigator.pop(context),
       );
     } else {
@@ -117,7 +116,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         title: 'Failed',
         message: provider.error ?? 'Unknown error',
         icon: Icons.error_outline,
-        color: Theme.of(context).colorScheme.error,
+        color: ZKColors.error,
         onDone: () {
           provider.clearError();
           setState(() {
@@ -141,12 +140,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: const Color(0xFF16162A),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -155,18 +154,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
             Text(
               title,
               style: const TextStyle(
-                color: Colors.white,
+                color: ZKColors.text,
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, height: 1.4),
+              style: const TextStyle(color: ZKColors.textMuted, height: 1.4),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -177,7 +176,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 child: Text(title == 'Success' ? 'Done' : 'Try Again'),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -193,7 +192,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text('Scan QR Code'),
+        title: const Text('Scan QR Code',
+            style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.flash_on_outlined),
@@ -208,9 +209,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
         ],
       ),
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Camera view
           if (!_processing)
             MobileScanner(
               controller: _controller,
@@ -226,14 +227,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
               child: CircularProgressIndicator(color: Colors.white),
             ),
 
-          // Scan overlay
           if (!_processing) const _ScanOverlay(),
 
-          // Processing overlay
           if (_processing || provider.isLoading)
             _ProcessingOverlay(message: provider.statusMessage),
 
-          // Paste input for testing
           if (_showPasteField)
             Positioned(
               left: 16,
@@ -252,8 +250,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 }
 
-// ---- Overlay Widgets ----
-
 class _ScanOverlay extends StatelessWidget {
   const _ScanOverlay();
 
@@ -268,26 +264,27 @@ class _ScanOverlay extends StatelessWidget {
               height: 240,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xFF7C3AED),
+                  color: ZKColors.primary,
                   width: 2.5,
                 ),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
-                child: ColoredBox(color: Colors.transparent),
+                child: const ColoredBox(color: Colors.transparent),
               ),
             ),
           ),
         ),
         Container(
-          color: Colors.black.withOpacity(0.6),
+          color: const Color.fromRGBO(0, 0, 0, 0.6),
           padding: const EdgeInsets.all(24),
           child: const Text(
             'Point the camera at an iden3comm QR code\n'
             '(Auth request or Credential offer)',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+            style:
+                TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
           ),
         ),
       ],
@@ -303,21 +300,22 @@ class _ProcessingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.85),
+      color: const Color.fromRGBO(0, 0, 0, 0.85),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7C3AED)),
+              valueColor: AlwaysStoppedAnimation<Color>(ZKColors.primary),
             ),
             const SizedBox(height: 24),
             Text(
               message,
               style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500),
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -325,8 +323,6 @@ class _ProcessingOverlay extends StatelessWidget {
     );
   }
 }
-
-// ---- Credential Picker ----
 
 class _CredentialPickerSheet extends StatelessWidget {
   const _CredentialPickerSheet({required this.credentials});
@@ -343,56 +339,49 @@ class _CredentialPickerSheet extends StatelessWidget {
       builder: (_, controller) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: ZKColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Select Credential',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: ZKColors.text,
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
-                  '${credentials.length} matching credentials found. '
-                  'Pick one to use for this proof.',
-                  style: const TextStyle(
-                      color: Colors.white54, fontSize: 13),
+                  'Pick the credential to use for this proof.',
+                  style: TextStyle(color: ZKColors.textMuted, fontSize: 13),
                 ),
               ],
             ),
           ),
-          const Divider(color: Color(0xFF2D2D4E)),
+          const Divider(color: ZKColors.border),
           Expanded(
             child: ListView.separated(
               controller: controller,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               itemCount: credentials.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: 10),
-              itemBuilder: (ctx, i) =>
-                  _CredentialPickerCard(
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (ctx, i) => _CredentialPickerCard(
                 credential: credentials[i],
                 isNewest: i == 0,
-                onTap: () =>
-                    Navigator.of(ctx).pop(credentials[i]),
+                onTap: () => Navigator.of(ctx).pop(credentials[i]),
               ),
             ),
           ),
@@ -425,7 +414,6 @@ class _CredentialPickerCard extends StatelessWidget {
 
   String get _credentialType {
     final t = credential.type;
-    // Strip namespace prefix if present (last segment after /)
     final slash = t.lastIndexOf('/');
     return slash >= 0 ? t.substring(slash + 1) : t;
   }
@@ -440,14 +428,12 @@ class _CredentialPickerCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E35),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isNewest
-                ? const Color(0xFF7C3AED)
-                : const Color(0xFF2D2D4E),
+            color: isNewest ? ZKColors.primary : ZKColors.border,
             width: isNewest ? 1.5 : 1,
           ),
         ),
@@ -457,13 +443,13 @@ class _CredentialPickerCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.verified_user_outlined,
-                    color: Color(0xFF7C3AED), size: 18),
+                    color: ZKColors.primary, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _credentialType,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: ZKColors.text,
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                     ),
@@ -475,30 +461,25 @@ class _CredentialPickerCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color:
-                          const Color.fromRGBO(124, 58, 237, 0.25),
+                      color: const Color(0xFFE9F7F4),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
                       'Newest',
                       style: TextStyle(
-                          color: Color(0xFF7C3AED),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
+                        color: ZKColors.primaryDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
               ],
             ),
             const SizedBox(height: 10),
-            _InfoRow(
-              label: 'Issued',
-              value: _formatDate(issuanceDate),
-            ),
+            _InfoRow(label: 'Issued', value: _formatDate(issuanceDate)),
             if (expirationDate != null && expirationDate.isNotEmpty)
               _InfoRow(
-                label: 'Expires',
-                value: _formatDate(expirationDate),
-              ),
+                  label: 'Expires', value: _formatDate(expirationDate)),
             _InfoRow(
               label: 'Issuer',
               value: issuer.length > 28
@@ -526,20 +507,20 @@ class _InfoRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 56,
+            width: 60,
             child: Text(
               label,
               style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500),
+                color: ZKColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style:
-                  const TextStyle(color: Colors.white70, fontSize: 12),
+              style: const TextStyle(color: ZKColors.text, fontSize: 12),
             ),
           ),
         ],
@@ -564,14 +545,13 @@ class _PasteInputCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF16162A),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2D2D4E)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Color.fromRGBO(0, 0, 0, 0.25),
             blurRadius: 20,
-            offset: const Offset(0, -4),
+            offset: Offset(0, -4),
           ),
         ],
       ),
@@ -583,12 +563,14 @@ class _PasteInputCard extends StatelessWidget {
               const Text(
                 'Paste QR Content',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600),
+                  color: ZKColors.text,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                icon: const Icon(Icons.close,
+                    color: ZKColors.textMuted, size: 20),
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 onPressed: onClose,
@@ -598,11 +580,12 @@ class _PasteInputCard extends StatelessWidget {
           const SizedBox(height: 8),
           TextField(
             controller: controller,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style:
+                const TextStyle(color: ZKColors.text, fontSize: 13),
             maxLines: 3,
             decoration: const InputDecoration(
               hintText: 'Paste iden3comm message or deep link here...',
-              hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+              hintStyle: TextStyle(color: Color(0xFF999999), fontSize: 13),
             ),
           ),
           const SizedBox(height: 12),

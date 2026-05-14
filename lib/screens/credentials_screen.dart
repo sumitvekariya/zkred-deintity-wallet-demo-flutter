@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/wallet_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/credential_card.dart';
 
 class CredentialsScreen extends StatefulWidget {
@@ -11,213 +12,243 @@ class CredentialsScreen extends StatefulWidget {
   State<CredentialsScreen> createState() => _CredentialsScreenState();
 }
 
-class _CredentialsScreenState extends State<CredentialsScreen> {
+class _CredentialsScreenState extends State<CredentialsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
+  String _query = '';
+
+  static const _tabs = [
+    _TabSpec('All', null),
+    _TabSpec('Education', 'education'),
+    _TabSpec('Achievements', 'achievement'),
+    _TabSpec('Training', 'training'),
+    _TabSpec('Job', 'job'),
+  ];
+
   @override
   void initState() {
     super.initState();
+    _tabCtrl = TabController(length: _tabs.length, vsync: this);
+    _tabCtrl.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WalletProvider>().loadCredentials();
+      final provider = context.read<WalletProvider>();
+      if (provider.hasIdentity) provider.loadCredentials();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
+  }
+
+  List<ClaimEntity> _filter(List<ClaimEntity> all) {
+    final keyword = _tabs[_tabCtrl.index].keyword;
+    Iterable<ClaimEntity> result = all;
+    if (keyword != null) {
+      result = result.where((c) =>
+          c.type.toLowerCase().contains(keyword));
+    }
+    if (_query.isNotEmpty) {
+      final q = _query.toLowerCase();
+      result = result.where((c) =>
+          c.type.toLowerCase().contains(q) ||
+          c.issuer.toLowerCase().contains(q));
+    }
+    return result.toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<WalletProvider>();
+    final filtered = _filter(provider.credentials);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Credentials'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined),
-            tooltip: 'Refresh',
-            onPressed: provider.isLoading
-                ? null
-                : () => provider.loadCredentials(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner_outlined),
-            tooltip: 'Scan to get credential',
-            onPressed: () => Navigator.pushNamed(context, '/scanner'),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: _buildBody(context, provider),
-      ),
-    );
-  }
-
-  Widget _buildBody(BuildContext context, WalletProvider provider) {
-    if (provider.isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading credentials...', style: TextStyle(color: Colors.white54)),
-          ],
-        ),
-      );
-    }
-
-    if (provider.error != null) {
-      return Center(
+    return GradientBackground(
+      child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error, size: 48),
-              const SizedBox(height: 16),
-              Text(
-                provider.error!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'My credentials',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: ZKColors.text,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => Navigator.pushNamed(context, '/scanner'),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: ZKColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.qr_code_scanner,
+                              size: 16, color: Colors.white),
+                          SizedBox(width: 6),
+                          Text(
+                            'Scan',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  provider.clearError();
-                  provider.loadCredentials();
-                },
-                child: const Text('Retry'),
+              const SizedBox(height: 14),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.06),
+                        blurRadius: 14,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      TabBar(
+                        controller: _tabCtrl,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        labelColor: ZKColors.primary,
+                        unselectedLabelColor: ZKColors.textMuted,
+                        indicatorColor: ZKColors.primary,
+                        indicatorWeight: 3,
+                        labelStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        unselectedLabelStyle:
+                            const TextStyle(fontSize: 14),
+                        tabs: _tabs
+                            .map((t) => Tab(text: t.label))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF6F6F6),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: TextField(
+                          onChanged: (v) => setState(() => _query = v),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: ZKColors.text,
+                          ),
+                          decoration: const InputDecoration(
+                            hintText: 'Search credentials',
+                            prefixIcon: Icon(Icons.search,
+                                color: ZKColors.textMuted, size: 20),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? const _EmptyState()
+                            : RefreshIndicator(
+                                onRefresh: provider.loadCredentials,
+                                color: ZKColors.primary,
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8),
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (_, __) => const Divider(
+                                    height: 1,
+                                    color: ZKColors.border,
+                                  ),
+                                  itemBuilder: (context, i) {
+                                    final claim = filtered[i];
+                                    return CredentialCard(
+                                      claim: claim,
+                                      onTap: () => Navigator.pushNamed(
+                                        context,
+                                        '/credential-detail',
+                                        arguments: claim,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: filtered.isEmpty ? null : () {},
+                          child: const Text('Share'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    if (provider.credentials.isEmpty) {
-      return _EmptyCredentials();
-    }
-
-    return RefreshIndicator(
-      onRefresh: provider.loadCredentials,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: provider.credentials.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final claim = provider.credentials[index];
-          return Dismissible(
-            key: Key(claim.id),
-            direction: DismissDirection.endToStart,
-            background: _SwipeDeleteBackground(),
-            confirmDismiss: (_) => _confirmDelete(context, claim.id),
-            onDismissed: (_) => provider.removeCredential(claim.id),
-            child: CredentialCard(
-              claim: claim,
-              onDelete: () async {
-                final ok = await _confirmDelete(context, claim.id);
-                if (ok == true) provider.removeCredential(claim.id);
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<bool?> _confirmDelete(BuildContext context, String id) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF16162A),
-        title: const Text('Delete Credential',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'Remove this credential from your wallet?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }
 }
 
-class _EmptyCredentials extends StatelessWidget {
+class _TabSpec {
+  final String label;
+  final String? keyword;
+  const _TabSpec(this.label, this.keyword);
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: cs.primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.badge_outlined,
-                  size: 52, color: cs.primary.withOpacity(0.6)),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'No Credentials Yet',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
+            Icon(Icons.badge_outlined,
+                color: ZKColors.primary, size: 40),
+            SizedBox(height: 12),
             Text(
-              'Scan a QR code from an issuer to receive '
-              'your first verifiable credential.',
+              'No credentials yet.\nScan a QR to claim one.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                height: 1.5,
+                color: ZKColors.textMuted,
+                fontSize: 14,
+                height: 1.4,
               ),
-            ),
-            const SizedBox(height: 28),
-            ElevatedButton.icon(
-              onPressed: () =>
-                  Navigator.pushNamed(context, '/scanner'),
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Scan QR Code'),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SwipeDeleteBackground extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 20),
-      decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.delete_outline, color: Colors.white),
-          SizedBox(height: 4),
-          Text('Delete', style: TextStyle(color: Colors.white, fontSize: 12)),
-        ],
       ),
     );
   }
