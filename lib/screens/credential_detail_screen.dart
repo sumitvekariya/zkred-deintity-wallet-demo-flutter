@@ -75,9 +75,26 @@ class CredentialDetailScreen extends StatelessWidget {
     final expirationDate =
         claim.info['expirationDate'] as String? ?? claim.expiration;
 
-    final infoEntries = claim.info.entries
-        .where((e) => e.value is! Map && e.value is! List)
-        .toList();
+    // Extract credentialSubject fields, mirroring the RN app.
+    // Flatten one level of nesting; skip 'id' and 'type'.
+    final subject =
+        (claim.info['credentialSubject'] as Map<String, dynamic>?) ?? {};
+    final subjectEntries = subject.entries
+        .where((e) => e.key != 'id' && e.key != 'type')
+        .expand<MapEntry<String, dynamic>>((e) {
+      final v = e.value;
+      if (v is Map<String, dynamic>) {
+        return v.entries.expand((inner) {
+          final iv = inner.value;
+          if (iv is Map<String, dynamic>) {
+            return iv.entries.map((deep) =>
+                MapEntry('${e.key}.${inner.key}.${deep.key}', deep.value));
+          }
+          return [MapEntry('${e.key}.${inner.key}', iv)];
+        });
+      }
+      return [e];
+    }).toList();
 
     return Scaffold(
       body: GradientBackground(
@@ -127,7 +144,7 @@ class CredentialDetailScreen extends StatelessWidget {
                                 width: 44,
                                 height: 44,
                                 decoration: const BoxDecoration(
-                                  color: const Color.fromRGBO(17, 78, 246, 0.15),
+                                  color: Color.fromRGBO(17, 78, 246, 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 alignment: Alignment.center,
@@ -200,7 +217,7 @@ class CredentialDetailScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          if (infoEntries.isEmpty)
+                          if (subjectEntries.isEmpty)
                             const Text(
                               'No additional fields',
                               style: TextStyle(
@@ -209,14 +226,8 @@ class CredentialDetailScreen extends StatelessWidget {
                               ),
                             )
                           else
-                            ...infoEntries.map(
-                              (e) => _kvRow(
-                                e.key,
-                                '${e.value}',
-                                mono: e.value is num || e.value is bool
-                                    ? false
-                                    : false,
-                              ),
+                            ...subjectEntries.map(
+                              (e) => _kvRow(e.key, '${e.value}'),
                             ),
                           const SizedBox(height: 18),
                           Row(

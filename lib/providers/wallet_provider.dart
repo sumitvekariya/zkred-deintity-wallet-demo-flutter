@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:polygonid_flutter_sdk/common/domain/domain_constants.dart';
 import 'package:polygonid_flutter_sdk/credential/domain/entities/claim_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/common/iden3_message_entity.dart';
@@ -93,7 +97,13 @@ class WalletProvider extends ChangeNotifier {
 
   Future<void> _downloadCircuits() async {
     _setMsg('Checking ZK circuit files...');
+    Timer? progressTimer;
     try {
+      // background_downloader writes to its own temp file in the cache dir
+      // (named com.bbflight.background_downloader{random}), not to our path.
+      // We scan the cache dir to sum those files for real byte progress.
+      final cacheDir = await getTemporaryDirectory();
+
       final stream = PolygonIdSdk.I.proof.initCircuitsDownloadAndGetInfoStream(
         circuitsToDownload: [
           CircuitsToDownloadParam(
@@ -103,24 +113,43 @@ class WalletProvider extends ChangeNotifier {
         ],
       );
 
+      progressTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+        try {
+          int bytes = 0;
+          if (cacheDir.existsSync()) {
+            for (final f in cacheDir.listSync()) {
+              if (f is File &&
+                  f.path.contains('com.bbflight.background_downloader')) {
+                bytes += f.lengthSync();
+              }
+            }
+          }
+          if (bytes > 0) {
+            final mb = (bytes / (1024 * 1024)).toStringAsFixed(1);
+            _setMsg('Downloading ZK circuits: $mb MB');
+            notifyListeners();
+          }
+        } catch (_) {}
+      });
+
       await for (final info in stream) {
         if (info is DownloadInfoOnProgress) {
           final total = info.contentLength;
-          if (total > 0) {
+          if (total > 0 && info.downloaded > 0) {
+            // Server did provide Content-Length — show percentage
+            progressTimer.cancel();
             _circuitProgress = info.downloaded / total;
             _setMsg(
                 'Downloading ZK circuits: ${(_circuitProgress * 100).toInt()}%');
-          } else {
-            // Server sent no Content-Length — show MB downloaded instead
-            _circuitProgress = 0;
-            final mb = (info.downloaded / (1024 * 1024)).toStringAsFixed(1);
-            _setMsg('Downloading ZK circuits: $mb MB…');
           }
+          // else let the timer poll show the MB counter
         } else if (info is DownloadInfoOnDone) {
+          progressTimer.cancel();
           _circuitProgress = 1.0;
           _setMsg('ZK circuits ready');
           break;
         } else if (info is DownloadInfoOnError) {
+          progressTimer.cancel();
           _log.w('Circuit download error: ${info.errorMessage}');
           break;
         }
@@ -128,6 +157,8 @@ class WalletProvider extends ChangeNotifier {
     } catch (e) {
       // Circuits may already be present — not a fatal error
       _log.w('Circuit download: $e');
+    } finally {
+      progressTimer?.cancel();
     }
     _circuitProgress = 1.0;
     notifyListeners();

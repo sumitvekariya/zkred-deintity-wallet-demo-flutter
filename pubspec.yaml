@@ -29,6 +29,8 @@ dependencies:
   http: ^1.6.0
   # Fonts
   google_fonts: ^6.2.1
+  # File path resolution (for circuit download progress tracking)
+  path_provider: ^2.1.4
   # Utilities
   intl: ^0.19.0
   uuid: ^3.0.7
