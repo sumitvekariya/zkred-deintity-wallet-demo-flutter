@@ -105,10 +105,17 @@ class WalletProvider extends ChangeNotifier {
 
       await for (final info in stream) {
         if (info is DownloadInfoOnProgress) {
-          final total = info.contentLength > 0 ? info.contentLength : 1;
-          _circuitProgress = info.downloaded / total;
-          _setMsg(
-              'Downloading ZK circuits: ${(_circuitProgress * 100).toInt()}%');
+          final total = info.contentLength;
+          if (total > 0) {
+            _circuitProgress = info.downloaded / total;
+            _setMsg(
+                'Downloading ZK circuits: ${(_circuitProgress * 100).toInt()}%');
+          } else {
+            // Server sent no Content-Length — show MB downloaded instead
+            _circuitProgress = 0;
+            final mb = (info.downloaded / (1024 * 1024)).toStringAsFixed(1);
+            _setMsg('Downloading ZK circuits: $mb MB…');
+          }
         } else if (info is DownloadInfoOnDone) {
           _circuitProgress = 1.0;
           _setMsg('ZK circuits ready');
