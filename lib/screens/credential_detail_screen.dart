@@ -127,7 +127,7 @@ class CredentialDetailScreen extends StatelessWidget {
                                 width: 44,
                                 height: 44,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFFE9F7F4),
+                                  color: const Color.fromRGBO(17, 78, 246, 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 alignment: Alignment.center,

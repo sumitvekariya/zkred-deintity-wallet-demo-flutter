@@ -586,7 +586,7 @@ class _PasteInputCard extends StatelessWidget {
             maxLines: 3,
             decoration: const InputDecoration(
               hintText: 'Paste iden3comm message or deep link here...',
-              hintStyle: TextStyle(color: Color(0xFF999999), fontSize: 13),
+              hintStyle: TextStyle(color: ZKColors.textSecondary, fontSize: 13),
             ),
           ),
           const SizedBox(height: 12),

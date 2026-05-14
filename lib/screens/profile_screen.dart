@@ -246,8 +246,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF6F6F6),
+                      color: ZKColors.card,
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: ZKColors.cardBorder),
                     ),
                     child: Text(
                       revealed ? pk : '•' * (pk.length.clamp(0, 32)),
@@ -256,6 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontFamily: 'monospace',
                         color: ZKColors.text,
                         height: 1.4,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
@@ -305,6 +307,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: ZKColors.surface,
         title: const Text('Regenerate identity'),
         content: const Text(
             'This deletes your current DID and credentials. A fresh identity will be created. Continue?'),
@@ -333,6 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final first = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: ZKColors.surface,
         title: const Text('Clear all data?'),
         content: const Text(
             'This removes the identity, all credentials and your passcode from this device.'),
@@ -353,6 +357,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final second = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: ZKColors.surface,
         title: const Text('Are you absolutely sure?'),
         content: const Text(
             'This action cannot be undone. Your private key will be wiped permanently.'),

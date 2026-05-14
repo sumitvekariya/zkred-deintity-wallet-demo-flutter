@@ -127,7 +127,7 @@ class _CredentialsScreenState extends State<CredentialsScreen>
                         isScrollable: true,
                         tabAlignment: TabAlignment.start,
                         labelColor: ZKColors.primary,
-                        unselectedLabelColor: ZKColors.textMuted,
+                        unselectedLabelColor: ZKColors.textSecondary,
                         indicatorColor: ZKColors.primary,
                         indicatorWeight: 3,
                         labelStyle: const TextStyle(
@@ -143,7 +143,7 @@ class _CredentialsScreenState extends State<CredentialsScreen>
                       const SizedBox(height: 10),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF6F6F6),
+                          color: ZKColors.surface,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: TextField(
