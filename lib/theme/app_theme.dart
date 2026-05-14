@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ZKred official brand colors (from Brand Guidelines 2025)
 class ZKColors {
@@ -39,7 +40,7 @@ class AppTheme {
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        fontFamily: 'Almarai',
+        textTheme: GoogleFonts.almaraiTextTheme(ThemeData.dark().textTheme),
         colorScheme: const ColorScheme.dark(
           primary: ZKColors.electric,
           secondary: ZKColors.base,
@@ -57,7 +58,6 @@ class AppTheme {
             color: ZKColors.textPrimary,
             fontSize: 22,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Almarai',
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -68,7 +68,7 @@ class AppTheme {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
             textStyle: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700, fontFamily: 'Almarai'),
+                fontSize: 16, fontWeight: FontWeight.w700),
             elevation: 0,
           ),
         ),
@@ -80,7 +80,7 @@ class AppTheme {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
             textStyle: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Almarai'),
+                fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
