@@ -26,7 +26,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _shortDid(String? did) {
     if (did == null || did.isEmpty) return 'Friend';
-    return did.length > 12 ? did.substring(0, 8) : did;
+    // Show last segment of DID: did:polygonid:polygon:amoy:<last>
+    final parts = did.split(':');
+    final last = parts.last;
+    if (last.length <= 16) return last;
+    return '${last.substring(0, 6)}…${last.substring(last.length - 6)}';
   }
 
   String _prettyType(String type) {
