@@ -54,3 +54,9 @@ app.*.map.json
 # Environment / secrets
 .env
 *.env
+
+# Claude Code session data
+.claude/
+
+# Project assets not for version control
+*.pdf
