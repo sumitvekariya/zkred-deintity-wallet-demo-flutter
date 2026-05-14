@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -83,14 +84,36 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          _shortDid(provider.identifier),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: ZKColors.text,
+                        GestureDetector(
+                          onTap: () {
+                            if (provider.identifier == null) return;
+                            Clipboard.setData(
+                                ClipboardData(text: provider.identifier!));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('DID copied to clipboard'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _shortDid(provider.identifier),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: ZKColors.text,
+                                ),
+                              ),
+                              if (provider.identifier != null) ...[
+                                const SizedBox(width: 6),
+                                const Icon(Icons.copy_outlined,
+                                    size: 14, color: ZKColors.textSecondary),
+                              ],
+                            ],
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
