@@ -8,8 +8,7 @@ class ClaimCredentialScreen extends StatefulWidget {
   const ClaimCredentialScreen({super.key});
 
   @override
-  State<ClaimCredentialScreen> createState() =>
-      _ClaimCredentialScreenState();
+  State<ClaimCredentialScreen> createState() => _ClaimCredentialScreenState();
 }
 
 enum _ClaimStep { initial, processing, done, error }
@@ -50,9 +49,9 @@ class _ClaimCredentialScreenState extends State<ClaimCredentialScreen>
   }
 
   Future<void> _claim() async {
-    final args = ModalRoute.of(context)?.settings.arguments
-            as Map<String, dynamic>? ??
-        const {};
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ??
+            const {};
     final url = (args['url'] as String?) ?? '';
 
     setState(() {
@@ -89,12 +88,11 @@ class _ClaimCredentialScreenState extends State<ClaimCredentialScreen>
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments
-            as Map<String, dynamic>? ??
-        const {};
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ??
+            const {};
     final title = (args['title'] as String?) ?? 'Issuer';
-    final subtitle =
-        (args['subtitle'] as String?) ?? 'Verifiable Credential';
+    final subtitle = (args['subtitle'] as String?) ?? 'Verifiable Credential';
 
     return Scaffold(
       body: GradientBackground(
@@ -182,7 +180,7 @@ class _Initial extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: const BoxDecoration(
-                  color: const Color.fromRGBO(17, 78, 246, 0.15),
+                  color: Color.fromRGBO(17, 78, 246, 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -335,8 +333,7 @@ class _Error extends StatelessWidget {
     return Column(
       children: [
         const Spacer(),
-        const Icon(Icons.error_outline,
-            color: ZKColors.error, size: 56),
+        const Icon(Icons.error_outline, color: ZKColors.error, size: 56),
         const SizedBox(height: 14),
         const Text(
           'Failed to claim',

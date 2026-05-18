@@ -4,23 +4,23 @@ import 'package:google_fonts/google_fonts.dart';
 // ZKred official brand colors (from Brand Guidelines 2025)
 class ZKColors {
   // Primary palette
-  static const electric = Color(0xFF114EF6);   // ZKred Electric — main CTA blue
-  static const base = Color(0xFF0D39B3);        // ZKred Base — mid blue
-  static const shield = Color(0xFF09287E);      // ZKred Shield — deep navy
-  static const trust = Color(0xFF061B54);       // ZKred Trust — darkest navy
+  static const electric = Color(0xFF114EF6); // ZKred Electric — main CTA blue
+  static const base = Color(0xFF0D39B3); // ZKred Base — mid blue
+  static const shield = Color(0xFF09287E); // ZKred Shield — deep navy
+  static const trust = Color(0xFF061B54); // ZKred Trust — darkest navy
 
   // Aliases for semantic use
   static const primary = electric;
   static const primaryDark = base;
-  static const background = trust;             // Dark navy background
-  static const surface = Color(0xFF0C2266);    // Slightly lighter surface
-  static const card = Color(0xFF0F2B7A);       // Card background
+  static const background = trust; // Dark navy background
+  static const surface = Color(0xFF0C2266); // Slightly lighter surface
+  static const card = Color(0xFF0F2B7A); // Card background
   static const cardBorder = Color(0xFF1A3A99);
 
   static const textPrimary = Color(0xFFFFFFFF);
   static const textSecondary = Color(0xB3FFFFFF); // 70% white
-  static const textMuted = Color(0x66FFFFFF);     // 40% white
-  static const textOnLight = Color(0xFF061B54);   // Trust color for text on white
+  static const textMuted = Color(0x66FFFFFF); // 40% white
+  static const textOnLight = Color(0xFF061B54); // Trust color for text on white
 
   // Aliases kept for screen compatibility
   static const text = textPrimary;
@@ -65,10 +65,10 @@ class AppTheme {
             backgroundColor: ZKColors.electric,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 52),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            textStyle: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            textStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             elevation: 0,
           ),
         ),
@@ -77,10 +77,10 @@ class AppTheme {
             foregroundColor: ZKColors.electric,
             side: const BorderSide(color: ZKColors.electric, width: 1.5),
             minimumSize: const Size(double.infinity, 52),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            textStyle: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            textStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -100,10 +100,8 @@ class AppTheme {
           ),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          hintStyle:
-              const TextStyle(color: ZKColors.textMuted, fontSize: 16),
-          labelStyle:
-              const TextStyle(color: ZKColors.textSecondary),
+          hintStyle: const TextStyle(color: ZKColors.textMuted, fontSize: 16),
+          labelStyle: const TextStyle(color: ZKColors.textSecondary),
         ),
         cardTheme: CardThemeData(
           color: ZKColors.card,
@@ -180,8 +178,8 @@ class ZKCard extends StatelessWidget {
         ),
         boxShadow: glowBorder
             ? [
-                BoxShadow(
-                  color: const Color.fromRGBO(17, 78, 246, 0.2),
+                const BoxShadow(
+                  color: Color.fromRGBO(17, 78, 246, 0.2),
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),

@@ -8,6 +8,8 @@ import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:polygonid_flutter_sdk/common/domain/domain_constants.dart';
 import 'package:polygonid_flutter_sdk/credential/domain/entities/claim_entity.dart';
+import 'package:polygonid_flutter_sdk/common/domain/entities/filter_entity.dart';
+import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/authorization/request/auth_body_request.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/common/iden3_message_entity.dart';
 import 'package:polygonid_flutter_sdk/iden3comm/domain/entities/credential/request/base.dart';
 import 'package:polygonid_flutter_sdk/proof/data/dtos/circuits_to_download_param.dart';
@@ -18,6 +20,14 @@ import '../config/app_config.dart';
 
 export 'package:polygonid_flutter_sdk/credential/domain/entities/claim_entity.dart'
     show ClaimEntity, ClaimState;
+export 'package:polygonid_flutter_sdk/iden3comm/domain/entities/authorization/request/auth_body_request.dart'
+    show AuthBodyRequest;
+export 'package:polygonid_flutter_sdk/iden3comm/domain/entities/common/request/proof_scope_request.dart'
+    show ProofScopeRequest;
+export 'package:polygonid_flutter_sdk/iden3comm/domain/entities/common/request/proof_scope_query_request.dart'
+    show ProofScopeQueryRequest;
+export 'package:polygonid_flutter_sdk/iden3comm/domain/entities/common/iden3_message_entity.dart'
+    show Iden3MessageEntity;
 
 enum WalletStatus { initial, initializing, ready, error }
 
@@ -41,6 +51,10 @@ class WalletProvider extends ChangeNotifier {
   Iden3MessageEntity? _pendingAuthMessage;
   List<ClaimEntity> _pendingMatchingCredentials = [];
 
+  // Pending proof preview — set when a proof request QR is scanned
+  Iden3MessageEntity? _pendingProofMessage;
+  Map<String, bool> _proofCredentialStatuses = {}; // queryType → found
+
   // ---- Getters ----
 
   WalletStatus get status => _status;
@@ -55,6 +69,10 @@ class WalletProvider extends ChangeNotifier {
   bool get hasPendingAuthSelection => _pendingAuthMessage != null;
   List<ClaimEntity> get pendingMatchingCredentials =>
       List.unmodifiable(_pendingMatchingCredentials);
+  bool get hasPendingProofPreview => _pendingProofMessage != null;
+  Iden3MessageEntity? get pendingProofMessage => _pendingProofMessage;
+  Map<String, bool> get proofCredentialStatuses =>
+      Map.unmodifiable(_proofCredentialStatuses);
 
   // ---- SDK Initialization ----
 
@@ -367,7 +385,52 @@ class WalletProvider extends ChangeNotifier {
 
       switch (message.messageType) {
         case Iden3MessageType.authRequest:
-          await _handleAuth(message);
+          final authBody = message.body as AuthBodyRequest;
+          final scopes = authBody.scope ?? [];
+          if (scopes.isNotEmpty) {
+            // Proof request — use same filters as SDK's getClaimsFromIden3Message
+            // (mirrors RN credWallet.findByQuery per scope)
+            _pendingProofMessage = message;
+            _proofCredentialStatuses = {};
+            for (final scope in scopes) {
+              final queryType = scope.query.type ?? '';
+              final contextUrl = scope.query.context ?? '';
+              try {
+                final filters = <FilterEntity>[
+                  if (queryType.isNotEmpty)
+                    FilterEntity(
+                      name: 'credential.credentialSubject.type',
+                      value: queryType,
+                    ),
+                  if (contextUrl.isNotEmpty)
+                    FilterEntity(
+                      operator: FilterOperator.equalsAnyInList,
+                      name: 'credential.@context',
+                      value: contextUrl,
+                    ),
+                  FilterEntity(
+                    operator: FilterOperator.nonEqual,
+                    name: 'state',
+                    value: ClaimState.revoked.name,
+                  ),
+                ];
+                final matching =
+                    await PolygonIdSdk.I.credential.getClaims(
+                  filters: filters,
+                  genesisDid: _genesisDid!,
+                  privateKey: _privateKey!,
+                );
+                _proofCredentialStatuses[queryType] =
+                    matching.isNotEmpty;
+              } catch (e) {
+                _log.w('Credential check for $queryType failed: $e');
+                _proofCredentialStatuses[queryType] = false;
+              }
+            }
+            notifyListeners();
+          } else {
+            await _handleAuth(message);
+          }
           break;
         case Iden3MessageType.credentialOffer:
         case Iden3MessageType.onchainCredentialOffer:
@@ -377,9 +440,9 @@ class WalletProvider extends ChangeNotifier {
           throw Exception(
               'Unsupported message type: ${message.messageType}');
       }
-      // If _handleAuth found multiple matches it set hasPendingAuthSelection
-      // without completing the auth — return false so the UI can show the picker.
+      // Pause for UI to handle pending states before completing
       if (hasPendingAuthSelection) return false;
+      if (hasPendingProofPreview) return false;
       return true;
     } catch (e, st) {
       _log.e('Handle QR failed', error: e, stackTrace: st);
@@ -520,6 +583,37 @@ class WalletProvider extends ChangeNotifier {
   void cancelPendingAuth() {
     _pendingAuthMessage = null;
     _pendingMatchingCredentials = [];
+    notifyListeners();
+  }
+
+  /// Execute the pending proof request after the user approves the preview.
+  /// Routes through _handleAuth so the multi-credential picker fires if needed.
+  Future<bool> confirmProof() async {
+    if (_pendingProofMessage == null) return false;
+    _setLoading(true);
+    _clearError();
+    final message = _pendingProofMessage!;
+    _pendingProofMessage = null;
+    _proofCredentialStatuses = {};
+    try {
+      await _handleAuth(message);
+      // If _handleAuth found multiple matches it set hasPendingAuthSelection
+      // without completing — return false so the UI can show the picker.
+      if (hasPendingAuthSelection) return false;
+      return true;
+    } catch (e, st) {
+      _log.e('Proof failed', error: e, stackTrace: st);
+      _setError('Proof generation failed:\n$e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Cancel the pending proof preview without running the proof.
+  void cancelProofPreview() {
+    _pendingProofMessage = null;
+    _proofCredentialStatuses = {};
     notifyListeners();
   }
 
