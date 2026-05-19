@@ -53,7 +53,10 @@ class WalletProvider extends ChangeNotifier {
 
   // Pending proof preview — set when a proof request QR is scanned
   Iden3MessageEntity? _pendingProofMessage;
-  Map<String, bool> _proofCredentialStatuses = {}; // queryType → found
+  // Per scope (keyed by queryType): all credentials that match the scope query
+  Map<String, List<ClaimEntity>> _proofMatchingByType = {};
+  // Per scope (keyed by queryType): the credential the user picked (or default first)
+  Map<String, ClaimEntity> _proofSelectedByType = {};
 
   // ---- Getters ----
 
@@ -71,8 +74,10 @@ class WalletProvider extends ChangeNotifier {
       List.unmodifiable(_pendingMatchingCredentials);
   bool get hasPendingProofPreview => _pendingProofMessage != null;
   Iden3MessageEntity? get pendingProofMessage => _pendingProofMessage;
-  Map<String, bool> get proofCredentialStatuses =>
-      Map.unmodifiable(_proofCredentialStatuses);
+  Map<String, List<ClaimEntity>> get proofMatchingByType =>
+      Map.unmodifiable(_proofMatchingByType);
+  Map<String, ClaimEntity> get proofSelectedByType =>
+      Map.unmodifiable(_proofSelectedByType);
 
   // ---- SDK Initialization ----
 
@@ -391,7 +396,8 @@ class WalletProvider extends ChangeNotifier {
             // Proof request — use same filters as SDK's getClaimsFromIden3Message
             // (mirrors RN credWallet.findByQuery per scope)
             _pendingProofMessage = message;
-            _proofCredentialStatuses = {};
+            _proofMatchingByType = {};
+            _proofSelectedByType = {};
             for (final scope in scopes) {
               final queryType = scope.query.type ?? '';
               final contextUrl = scope.query.context ?? '';
@@ -420,11 +426,13 @@ class WalletProvider extends ChangeNotifier {
                   genesisDid: _genesisDid!,
                   privateKey: _privateKey!,
                 );
-                _proofCredentialStatuses[queryType] =
-                    matching.isNotEmpty;
+                _proofMatchingByType[queryType] = matching;
+                if (matching.isNotEmpty) {
+                  _proofSelectedByType[queryType] = matching.first;
+                }
               } catch (e) {
                 _log.w('Credential check for $queryType failed: $e');
-                _proofCredentialStatuses[queryType] = false;
+                _proofMatchingByType[queryType] = [];
               }
             }
             notifyListeners();
@@ -586,26 +594,83 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// User picked which credential to use for [queryType] in the preview sheet.
+  void setProofSelection(String queryType, ClaimEntity selected) {
+    _proofSelectedByType[queryType] = selected;
+    notifyListeners();
+  }
+
   /// Execute the pending proof request after the user approves the preview.
-  /// Routes through _handleAuth so the multi-credential picker fires if needed.
+  /// Temporarily removes non-selected matching credentials so the SDK picks
+  /// the user's choice, then restores them.
   Future<bool> confirmProof() async {
     if (_pendingProofMessage == null) return false;
     _setLoading(true);
     _clearError();
     final message = _pendingProofMessage!;
+    final selectedIds =
+        _proofSelectedByType.values.map((c) => c.id).toSet();
+    final allMatching = _proofMatchingByType.values.expand((l) => l);
+    final toRemove = <ClaimEntity>[
+      for (final c in allMatching) if (!selectedIds.contains(c.id)) c,
+    ];
     _pendingProofMessage = null;
-    _proofCredentialStatuses = {};
+    _proofMatchingByType = {};
+    _proofSelectedByType = {};
+
+    final removed = <ClaimEntity>[];
     try {
-      await _handleAuth(message);
-      // If _handleAuth found multiple matches it set hasPendingAuthSelection
-      // without completing — return false so the UI can show the picker.
-      if (hasPendingAuthSelection) return false;
+      for (final c in toRemove) {
+        await PolygonIdSdk.I.credential.removeClaim(
+          claimId: c.id,
+          genesisDid: _genesisDid!,
+          privateKey: _privateKey!,
+        );
+        removed.add(c);
+      }
+
+      _setMsg('Generating ZK proof...');
+      final env = await PolygonIdSdk.I.getEnv();
+      final identity = await PolygonIdSdk.I.identity.getIdentity(
+        genesisDid: _genesisDid!,
+        privateKey: _privateKey!,
+      );
+      final next = await PolygonIdSdk.I.iden3comm.authenticateV2(
+        message: message,
+        genesisDid: _genesisDid!,
+        privateKey: _privateKey!,
+        profileNonce: GENESIS_PROFILE_NONCE,
+        identityEntity: identity,
+        env: env,
+      );
+      if (next != null) {
+        switch (next.messageType) {
+          case Iden3MessageType.credentialOffer:
+          case Iden3MessageType.onchainCredentialOffer:
+            await _handleCredentialOffer(next);
+            break;
+          default:
+            _log.d('Follow-up ${next.messageType} — no action');
+        }
+      }
       return true;
     } catch (e, st) {
       _log.e('Proof failed', error: e, stackTrace: st);
       _setError('Proof generation failed:\n$e');
       return false;
     } finally {
+      if (removed.isNotEmpty) {
+        try {
+          await PolygonIdSdk.I.credential.saveClaims(
+            claims: removed,
+            genesisDid: _genesisDid!,
+            privateKey: _privateKey!,
+          );
+          await loadCredentials();
+        } catch (e) {
+          _log.e('Failed to restore credentials', error: e);
+        }
+      }
       _setLoading(false);
     }
   }
@@ -613,7 +678,8 @@ class WalletProvider extends ChangeNotifier {
   /// Cancel the pending proof preview without running the proof.
   void cancelProofPreview() {
     _pendingProofMessage = null;
-    _proofCredentialStatuses = {};
+    _proofMatchingByType = {};
+    _proofSelectedByType = {};
     notifyListeners();
   }
 

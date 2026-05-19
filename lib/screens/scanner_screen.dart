@@ -135,25 +135,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   Future<void> _showProofPreview(WalletProvider provider) async {
-    final message = provider.pendingProofMessage!;
-    final authBody = message.body as AuthBodyRequest;
-    final scopes = authBody.scope ?? [];
-    final statuses = provider.proofCredentialStatuses;
-    final allFound = statuses.values.every((v) => v);
-
     final approved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: ZKColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _ProofPreviewSheet(
-        authBody: authBody,
-        scopes: scopes,
-        credentialStatuses: statuses,
-        allFound: allFound,
-      ),
+      builder: (_) => const _ProofPreviewSheet(),
     );
 
     if (!mounted) return;
@@ -171,12 +162,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
     setState(() => _processing = true);
     final ok = await provider.confirmProof();
     if (!mounted) return;
-
-    // Multiple credentials matched — hand off to the credential picker
-    if (!ok && provider.hasPendingAuthSelection) {
-      await _showCredentialPicker(provider);
-      return;
-    }
 
     if (ok) {
       _showResult(
@@ -326,20 +311,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
 }
 
 class _ProofPreviewSheet extends StatelessWidget {
-  const _ProofPreviewSheet({
-    required this.authBody,
-    required this.scopes,
-    required this.credentialStatuses,
-    required this.allFound,
-  });
+  const _ProofPreviewSheet();
 
-  final AuthBodyRequest authBody;
-  final List<ProofScopeRequest> scopes;
-  final Map<String, bool> credentialStatuses;
-  final bool allFound;
-
-  String _verifierHost() {
-    final url = authBody.callbackUrl ?? '';
+  String _verifierHost(AuthBodyRequest body) {
+    final url = body.callbackUrl ?? '';
     try {
       final uri = Uri.parse(url);
       return uri.host.isNotEmpty ? uri.host : url;
@@ -348,257 +323,503 @@ class _ProofPreviewSheet extends StatelessWidget {
     }
   }
 
+  List<Widget> _buildSubjectRows(Map<String, dynamic>? subject) {
+    if (subject == null || subject.isEmpty) return const [];
+    final entries = subject.entries
+        .where((e) => e.key != 'id' && e.key != 'type')
+        .toList();
+    return entries
+        .map((e) => Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 110,
+                    child: Text(
+                      e.key,
+                      style: const TextStyle(
+                        color: ZKColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      '${e.value}',
+                      style: const TextStyle(
+                        color: ZKColors.text,
+                        fontSize: 11,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ))
+        .toList();
+  }
+
+  String _credShortLabel(ClaimEntity c) {
+    final issuanceDate = c.info['issuanceDate'] as String?;
+    final issuer = c.issuer;
+    final shortIssuer = issuer.length > 16
+        ? '${issuer.substring(0, 8)}…${issuer.substring(issuer.length - 6)}'
+        : issuer;
+    return '$shortIssuer · ${issuanceDate ?? c.id.substring(0, 8)}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (_, scrollCtrl) => Column(
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: ZKColors.border,
-                borderRadius: BorderRadius.circular(2),
+    return Consumer<WalletProvider>(
+      builder: (context, provider, _) {
+        final message = provider.pendingProofMessage;
+        if (message == null) {
+          return const SizedBox.shrink();
+        }
+        final authBody = message.body as AuthBodyRequest;
+        final scopes = authBody.scope ?? [];
+        final matchingByType = provider.proofMatchingByType;
+        final selectedByType = provider.proofSelectedByType;
+        final allFound =
+            scopes.every((s) => (matchingByType[s.query.type ?? '']?.isNotEmpty ?? false));
+
+        return SizedBox(
+          height: MediaQuery.of(context).size.height -
+              MediaQuery.of(context).padding.top -
+              kToolbarHeight,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    const Icon(Icons.policy_outlined,
+                        color: ZKColors.primary, size: 22),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Proof Request',
+                      style: TextStyle(
+                        color: ZKColors.text,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close,
+                          color: ZKColors.textSecondary, size: 20),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                const Icon(Icons.policy_outlined,
-                    color: ZKColors.primary, size: 22),
-                const SizedBox(width: 8),
-                const Text(
-                  'Proof Request',
-                  style: TextStyle(
-                    color: ZKColors.text,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close,
-                      color: ZKColors.textSecondary, size: 20),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  onPressed: () => Navigator.of(context).pop(false),
-                ),
-              ],
-            ),
-          ),
-          const Divider(color: ZKColors.border),
-          Expanded(
-            child: ListView(
-              controller: scrollCtrl,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              children: [
-                if (!allFound)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3CD),
-                      border:
-                          Border.all(color: const Color(0xFFFFEEBA)),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.warning_amber_rounded,
-                            color: Color(0xFF856404), size: 18),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Required credential not found in your wallet. '
-                            'Please obtain the necessary credential before proving.',
-                            style: TextStyle(
-                              color: Color(0xFF856404),
-                              fontSize: 13,
-                              height: 1.4,
-                            ),
-                          ),
+              const Divider(color: ZKColors.border),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  children: [
+                    if (!allFound)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3CD),
+                          border:
+                              Border.all(color: const Color(0xFFFFEEBA)),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ],
-                    ),
-                  ),
-                // Verifier info
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: ZKColors.card,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: ZKColors.cardBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _verifierHost(),
-                        style: const TextStyle(
-                          color: ZKColors.text,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'requests you to sign in',
-                        style: TextStyle(
-                            color: ZKColors.textSecondary, fontSize: 14),
-                      ),
-                      if (authBody.reason != null &&
-                          authBody.reason!.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          'Reason: ${authBody.reason}',
-                          style: const TextStyle(
-                            color: ZKColors.textMuted,
-                            fontSize: 13,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                // Scope cards
-                ...scopes.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final scope = entry.value;
-                  final queryType = scope.query.type ?? '';
-                  final found = credentialStatuses[queryType] ?? false;
-                  final credSubject = scope.query.credentialSubject ?? {};
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: ZKColors.card,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: found
-                            ? ZKColors.cardBorder
-                            : const Color(0xFFFFCDD2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Proof ${i + 1}',
-                              style: const TextStyle(
-                                color: ZKColors.textMuted,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              found
-                                  ? Icons.check_circle_outline
-                                  : Icons.cancel_outlined,
-                              color: found
-                                  ? ZKColors.success
-                                  : ZKColors.error,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              found ? 'Credential found' : 'Not found',
-                              style: TextStyle(
-                                color: found
-                                    ? ZKColors.success
-                                    : ZKColors.error,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                            Icon(Icons.warning_amber_rounded,
+                                color: Color(0xFF856404), size: 18),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Required credential not found in your wallet. '
+                                'Please obtain the necessary credential before proving.',
+                                style: TextStyle(
+                                  color: Color(0xFF856404),
+                                  fontSize: 13,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        _ScopeRow('Type', queryType),
-                        _ScopeRow('Circuit', scope.circuitId),
-                        if (credSubject.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Credential Subject',
-                            style: TextStyle(
-                              color: ZKColors.textMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          ...credSubject.entries.map(
-                            (e) {
-                              final isEmpty = e.value is Map &&
-                                  (e.value as Map).isEmpty;
-                              return _ScopeRow(
-                                e.key,
-                                isEmpty ? '(any)' : '${e.value}',
-                              );
-                            },
-                          ),
-                        ],
-                        if (scope.query.context != null &&
-                            scope.query.context!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                      ),
+                    // Verifier info
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: ZKColors.card,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: ZKColors.cardBorder),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            scope.query.context!,
+                            _verifierHost(authBody),
                             style: const TextStyle(
-                              color: ZKColors.textMuted,
-                              fontSize: 11,
-                              fontStyle: FontStyle.italic,
+                              color: ZKColors.text,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'requests you to sign in',
+                            style: TextStyle(
+                                color: ZKColors.textSecondary,
+                                fontSize: 14),
+                          ),
+                          if (authBody.reason != null &&
+                              authBody.reason!.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'Reason: ${authBody.reason}',
+                              style: const TextStyle(
+                                color: ZKColors.textMuted,
+                                fontSize: 13,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
+                    ),
+                    // Scope cards
+                    ...scopes.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final scope = entry.value;
+                      final queryType = scope.query.type ?? '';
+                      final matches = matchingByType[queryType] ?? [];
+                      final found = matches.isNotEmpty;
+                      final selected = selectedByType[queryType];
+                      final credSubject =
+                          scope.query.credentialSubject ?? {};
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: ZKColors.card,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: found
+                                ? ZKColors.cardBorder
+                                : const Color(0xFFFFCDD2),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'Proof ${i + 1}',
+                                  style: const TextStyle(
+                                    color: ZKColors.textMuted,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Icon(
+                                  found
+                                      ? Icons.check_circle_outline
+                                      : Icons.cancel_outlined,
+                                  color: found
+                                      ? ZKColors.success
+                                      : ZKColors.error,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  found
+                                      ? 'Credential found'
+                                      : 'Not found',
+                                  style: TextStyle(
+                                    color: found
+                                        ? ZKColors.success
+                                        : ZKColors.error,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            _ScopeRow('Type', queryType),
+                            _ScopeRow('Circuit', scope.circuitId),
+                            if (matches.length == 1 && selected != null) ...[
+                              const SizedBox(height: 8),
+                              _CredentialDataExpansion(
+                                credential: selected,
+                              ),
+                            ],
+                            if (matches.length > 1 && selected != null) ...[
+                              const SizedBox(height: 10),
+                              InkWell(
+                                onTap: () => _pickCredential(
+                                  context,
+                                  provider,
+                                  queryType,
+                                  matches,
+                                  selected,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromRGBO(
+                                        17, 78, 246, 0.08),
+                                    borderRadius:
+                                        BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: const Color.fromRGBO(
+                                          17, 78, 246, 0.25),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.swap_horiz,
+                                              size: 16,
+                                              color: ZKColors.primary),
+                                          const SizedBox(width: 6),
+                                          const Text(
+                                            'Select Credential',
+                                            style: TextStyle(
+                                              color: ZKColors.primary,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            '${matches.length} options',
+                                            style: const TextStyle(
+                                              color: ZKColors.primary,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      ..._buildSubjectRows(selected.info[
+                                              'credentialSubject']
+                                          as Map<String, dynamic>?),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (credSubject.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Credential Subject',
+                                style: TextStyle(
+                                  color: ZKColors.textMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              ...credSubject.entries.map(
+                                (e) {
+                                  final isEmpty = e.value is Map &&
+                                      (e.value as Map).isEmpty;
+                                  return _ScopeRow(
+                                    e.key,
+                                    isEmpty ? '(any)' : '${e.value}',
+                                  );
+                                },
+                              ),
+                            ],
+                            if (scope.query.context != null &&
+                                scope.query.context!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                scope.query.context!,
+                                style: const TextStyle(
+                                  color: ZKColors.textMuted,
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(20, 8, 20,
+                    MediaQuery.of(context).padding.bottom + 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () =>
+                            Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: allFound
+                            ? () => Navigator.of(context).pop(true)
+                            : null,
+                        child: const Text('Prove'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickCredential(
+    BuildContext context,
+    WalletProvider provider,
+    String queryType,
+    List<ClaimEntity> candidates,
+    ClaimEntity current,
+  ) async {
+    final picked = await showModalBottomSheet<ClaimEntity>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: ZKColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: ZKColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: Text(
+                'Select Credential',
+                style: TextStyle(
+                  color: ZKColors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Text(
+                'For: $queryType',
+                style: const TextStyle(
+                    color: ZKColors.textSecondary, fontSize: 13),
+              ),
+            ),
+            const Divider(color: ZKColors.border, height: 1),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                itemCount: candidates.length,
+                itemBuilder: (_, i) {
+                  final c = candidates[i];
+                  final isSelected = c.id == current.id;
+                  return InkWell(
+                    onTap: () => Navigator.of(ctx).pop(c),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: ZKColors.card,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? ZKColors.primary
+                              : ZKColors.cardBorder,
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Credential ${i + 1}',
+                                  style: const TextStyle(
+                                    color: ZKColors.text,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(Icons.check_circle,
+                                    color: ZKColors.primary, size: 20),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _credShortLabel(c),
+                            style: const TextStyle(
+                              color: ZKColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          ..._buildSubjectRows(c.info['credentialSubject']
+                              as Map<String, dynamic>?),
+                        ],
+                      ),
                     ),
                   );
-                }),
-              ],
+                },
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                20, 8, 20, MediaQuery.of(context).padding.bottom + 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: allFound
-                        ? () => Navigator.of(context).pop(true)
-                        : null,
-                    child: const Text('Prove'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+
+    if (picked != null) {
+      provider.setProofSelection(queryType, picked);
+    }
   }
 }
 
@@ -704,6 +925,126 @@ class _ProcessingOverlay extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CredentialDataExpansion extends StatefulWidget {
+  const _CredentialDataExpansion({required this.credential});
+
+  final ClaimEntity credential;
+
+  @override
+  State<_CredentialDataExpansion> createState() =>
+      _CredentialDataExpansionState();
+}
+
+class _CredentialDataExpansionState
+    extends State<_CredentialDataExpansion> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final subject = widget.credential.info['credentialSubject']
+        as Map<String, dynamic>?;
+    final entries = (subject ?? const {})
+        .entries
+        .where((e) => e.key != 'id' && e.key != 'type')
+        .toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color.fromRGBO(17, 78, 246, 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color.fromRGBO(17, 78, 246, 0.18),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.visibility_outlined,
+                      size: 14, color: ZKColors.primary),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'View credential data',
+                    style: TextStyle(
+                      color: ZKColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _expanded
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    color: ZKColors.primary,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: entries.isEmpty
+                    ? const [
+                        Text(
+                          'No additional fields',
+                          style: TextStyle(
+                              color: ZKColors.textMuted, fontSize: 11),
+                        ),
+                      ]
+                    : entries
+                        .map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Row(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 110,
+                                  child: Text(
+                                    e.key,
+                                    style: const TextStyle(
+                                      color: ZKColors.textMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    '${e.value}',
+                                    style: const TextStyle(
+                                      color: ZKColors.text,
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
+        ],
       ),
     );
   }
